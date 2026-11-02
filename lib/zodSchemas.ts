@@ -25,4 +25,23 @@ export const courseSchema = z.object({
   smallDescription: z.string().min(1, "Resumo curto é obrigatório."),
 });
 
+export const chapterSchema = z.object({
+  name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
+  courseId: z.string().min(1, "id do curso inválido"),
+});
+
+export const lessonSchema = z.object({
+  name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
+  courseId: z.string().min(1, "id do curso inválido"),
+  chapterId: z.string().min(1, "id do capítulo inválido"),
+  description: z
+    .string()
+    .min(3, "A descrição deve ter pelo menos 3 caracteres")
+    .optional(),
+  thumbnailKey: z.string().optional(),
+  videoKey: z.string().optional(),
+});
+
 export type CourseSchemaType = z.infer<typeof courseSchema>;
+export type ChapterSchemaType = z.infer<typeof chapterSchema>;
+export type LessonSchemaType = z.infer<typeof lessonSchema>;

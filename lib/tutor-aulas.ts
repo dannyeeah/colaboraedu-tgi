@@ -13,7 +13,7 @@ export async function buscarAulaTutor(aulaId: string) {
       Chapter: {
         select: {
           title: true,
-          courses: {
+          Course: {
             select: {
               id: true,
               title: true,
@@ -32,7 +32,7 @@ export async function buscarAulaTutor(aulaId: string) {
 }
 
 export async function buscarCursoTutor(cursoId: string) {
-  const curso = await prisma.courses.findUnique({
+  const curso = await prisma.course.findUnique({
     where: {
       id: cursoId,
     },
@@ -43,7 +43,7 @@ export async function buscarCursoTutor(cursoId: string) {
       smallDescription: true,
       level: true,
       category: true,
-      Chapter: {
+      chapter: {
         orderBy: {
           position: "asc",
         },
@@ -51,7 +51,7 @@ export async function buscarCursoTutor(cursoId: string) {
           id: true,
           title: true,
           position: true,
-          Lesson: {
+          lessons: {
             orderBy: {
               position: "asc",
             },

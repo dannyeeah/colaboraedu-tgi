@@ -31,6 +31,8 @@ export default function TutorChat({
   const [aberto, setAberto] = useState(false);
   const [pergunta, setPergunta] = useState("");
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
+  
+
   const [carregando, setCarregando] = useState(false);
 
   const finalChatRef = useRef<HTMLDivElement>(null);
@@ -54,6 +56,18 @@ export default function TutorChat({
   async function enviarPergunta() {
     const texto = pergunta.trim();
 
+    
+const historico = mensagens
+  .filter((mensagem) => mensagem.texto.trim())
+  .slice(-20)
+  .map((mensagem) => ({
+    role: mensagem.autor === "aluno"
+      ? "user" as const
+      : "assistant" as const,
+    content: mensagem.texto,
+  }))
+  .filter((mensagem) => mensagem.content.length <= 4000);
+
     if (!texto || carregando) return;
 
     setPergunta("");
@@ -71,11 +85,14 @@ export default function TutorChat({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          pergunta: texto,
-          cursoId,
-          ...(aulaId !== undefined ? { aulaId } : {}),
-        }),
+        
+      body: JSON.stringify({
+        pergunta: texto,
+        cursoId,
+        ...(aulaId !== undefined ? { aulaId } : {}),
+        historico,
+      }),
+
       });
 
       if (!respostaAPI.ok) {

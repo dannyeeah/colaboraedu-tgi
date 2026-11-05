@@ -2,8 +2,19 @@
 import { notFound } from "next/navigation";
 import { getStudentCourse } from "@/app/data/student/get-course";
 import TutorChat from "@/components/TutorChat";
+import Link from "next/link";
 
-export default async function TesteAulaPage() {
+type PageProps = {
+  searchParams: Promise<{
+    aulaId?: string;
+  }>;
+};
+
+export default async function TesteAulaPage({
+  searchParams,
+}: PageProps) {
+  const { aulaId } = await searchParams;
+
   const cursoId = "cmvo8pxr8000098i443gtiiit";
 
   const curso = await getStudentCourse(cursoId);
@@ -12,15 +23,21 @@ export default async function TesteAulaPage() {
     notFound();
   }
 
-  const capitulo = curso.chapter.find(
-    (item) => item.lessons.length > 0
-  );
+  
+const capitulo = aulaId !== undefined
+  ? curso.chapter.find((item) =>
+      item.lessons.some((lesson) => lesson.id === aulaId)
+    )
+  : curso.chapter.find((item) => item.lessons.length > 0);
 
-  const aula = capitulo?.lessons[0];
+const aula = aulaId !== undefined
+  ? capitulo?.lessons.find((lesson) => lesson.id === aulaId)
+  : capitulo?.lessons[0];
 
-  if (!aula) {
-    notFound();
-  }
+
+  if (!capitulo || !aula) {
+  notFound();
+}
 
   const videoUrl = aula.videoKey
     ? aula.videoKey.startsWith("http")
@@ -71,14 +88,21 @@ export default async function TesteAulaPage() {
               <div key={item.id} className="mb-5">
                 <h3 className="font-semibold">{item.title}</h3>
 
-                {item.lessons.map((lesson) => (
-                  <p
-                    key={`${item.id}-${lesson.position}`}
-                    className="mt-2 rounded-lg bg-muted p-3 text-sm"
-                  >
-                    ▶ {lesson.title}
-                  </p>
-                ))}
+                
+{item.lessons.map((lesson) => (
+  <Link
+    key={lesson.id}
+    href={`/teste-aula?aulaId=${encodeURIComponent(lesson.id)}`}
+    className={`mt-2 block rounded-lg p-3 text-sm transition-colors hover:bg-accent ${
+      lesson.id === aula.id
+        ? "bg-primary text-primary-foreground"
+        : "bg-muted text-foreground"
+    }`}
+  >
+    ▶ {lesson.title}
+  </Link>
+))}
+
               </div>
             ))}
           </aside>
@@ -86,10 +110,11 @@ export default async function TesteAulaPage() {
       </div>
 
       <TutorChat
-        cursoId={curso.id}
-        aulaId={aula.id}
-        tituloAula={aula.title}
-      />
+  key={`${curso.id}:${aula.id}`}
+  cursoId={curso.id}
+  aulaId={aula.id}
+  tituloAula={aula.title}
+/>
     </main>
   );
 }

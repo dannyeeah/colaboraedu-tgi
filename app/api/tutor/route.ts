@@ -33,7 +33,7 @@ function extrairTexto(conteudo: string | null | undefined): string {
 
 export async function POST(req: Request) {
   try {
-    const { pergunta, cursoId, aulaId } = await req.json();
+    const { pergunta, cursoId, aulaId, historico } = await req.json();
 
     if (typeof pergunta !== "string" || !pergunta.trim()) {
       return Response.json(
@@ -47,6 +47,44 @@ export async function POST(req: Request) {
         { erro: "Informe um curso válido." },
         { status: 400 }
       );
+    }
+
+    
+    // Valida e limita o histórico da conversa.
+    const mensagensAnteriores: {
+      role: "user" | "assistant";
+      content: string;
+    }[] = [];
+
+    if (historico !== undefined) {
+      if (!Array.isArray(historico) || historico.length > 20) {
+        return Response.json(
+          { erro: "Histórico de conversa inválido." },
+          { status: 400 }
+        );
+      }
+
+      for (const mensagem of historico) {
+        if (
+          !mensagem ||
+          typeof mensagem !== "object" ||
+          (mensagem.role !== "user" &&
+            mensagem.role !== "assistant") ||
+          typeof mensagem.content !== "string" ||
+          !mensagem.content.trim() ||
+          mensagem.content.length > 4000
+        ) {
+          return Response.json(
+            { erro: "Mensagem do histórico inválida." },
+            { status: 400 }
+          );
+        }
+
+        mensagensAnteriores.push({
+          role: mensagem.role,
+          content: mensagem.content,
+        });
+      }
     }
 
     const curso = await buscarCursoTutor(cursoId);
@@ -175,7 +213,15 @@ CONTEXTO EDUCACIONAL:
 ${contexto}
 `,
 
-      prompt: pergunta.trim(),
+      
+messages: [
+  ...mensagensAnteriores,
+  {
+    role: "user",
+    content: pergunta.trim(),
+  },
+],
+
 
       onError({ error }) {
         console.error("ERRO DO GEMINI:", error);

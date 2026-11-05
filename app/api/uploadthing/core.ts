@@ -5,6 +5,7 @@ const f = createUploadthing();
 export const ourFileRouter = {
   mediaUploader: f({
     image: { maxFileSize: "4MB", maxFileCount: 1 },
+    video: { maxFileSize: "512MB", maxFileCount: 1 },
   }).onUploadComplete(async ({ file }) => {
     return {
       key: file.key,

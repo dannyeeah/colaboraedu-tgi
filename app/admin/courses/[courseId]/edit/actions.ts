@@ -9,6 +9,7 @@ import {
   courseSchema,
   CourseSchemaType,
   lessonSchema,
+  LessonSchemaType,
 } from "@/lib/zodSchemas";
 import { revalidatePath } from "next/cache";
 
@@ -232,6 +233,76 @@ export async function createLesson(
     return {
       status: "error",
       message: "Failed to create lesson",
+    };
+  }
+}
+
+export async function updateLesson(
+  lessonId: string,
+  values: LessonSchemaType,
+): Promise<ApiResponse> {
+  await requireAdmin();
+
+  try {
+    const result = lessonSchema.safeParse(values);
+
+    if (!result.success) {
+      return {
+        status: "error",
+        message: "Invalid data",
+      };
+    }
+
+    const chapter = await prisma.chapter.findFirst({
+      where: {
+        id: result.data.chapterId,
+        courseId: result.data.courseId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!chapter) {
+      return {
+        status: "error",
+        message: "Chapter not found in the course.",
+      };
+    }
+
+    const updatedLesson = await prisma.lesson.updateMany({
+      where: {
+        id: lessonId,
+        chapterId: chapter.id,
+      },
+      data: {
+        title: result.data.name,
+        description: result.data.description ?? null,
+        thumbnailKey: result.data.thumbnailKey ?? null,
+        videoKey: result.data.videoKey ?? null,
+      },
+    });
+
+    if (updatedLesson.count === 0) {
+      return {
+        status: "error",
+        message: "Lesson not found in the chapter.",
+      };
+    }
+
+    revalidatePath(`/admin/courses/${result.data.courseId}/edit`);
+    revalidatePath(
+      `/admin/courses/${result.data.courseId}/${result.data.chapterId}/${lessonId}`,
+    );
+
+    return {
+      status: "success",
+      message: "Lesson updated successfully",
+    };
+  } catch {
+    return {
+      status: "error",
+      message: "Failed to update lesson",
     };
   }
 }

@@ -28,6 +28,7 @@ interface UploaderState {
 interface UploaderProps {
   onFileSelected?: (file: File | null) => void;
   fileKey?: string;
+  mediaType?: "image" | "video";
   status?: "uploading" | "success" | "error";
   progress?: number;
 }
@@ -35,6 +36,7 @@ interface UploaderProps {
 export function Uploader({
   onFileSelected,
   fileKey,
+  mediaType = "image",
   progress = 0,
   status,
 }: UploaderProps) {
@@ -59,20 +61,28 @@ export function Uploader({
 
         await new Promise((resolve) => setTimeout(resolve, 700));
         setFileState((prev) => ({ ...prev, isLoading: false }));
-        toast.success("Imagem adicionada com sucesso.", { duration: 4000 });
+        toast.success(
+          `${mediaType === "video" ? "Vídeo" : "Imagem"} adicionada com sucesso.`,
+          { duration: 4000 },
+        );
       }
     },
-    [onFileSelected],
+    [mediaType, onFileSelected],
   );
 
   function rejectedFiles(fileRejection: FileRejection[]) {
     if (fileRejection.length) {
       const tooManyfiles = fileRejection.find(
-        (rejection) => rejection.errors[0].code === "too-many-files",
+        (rejection) =>
+          rejection.errors.some((error) => error.code === "too-many-files"),
       );
 
       const fileSizeToBig = fileRejection.find(
-        (rejection) => rejection.errors[0].code === "file-too-large",
+        (rejection) =>
+          rejection.errors.some((error) => error.code === "file-too-large"),
+      );
+      const invalidType = fileRejection.find((rejection) =>
+        rejection.errors.some((error) => error.code === "file-invalid-type"),
       );
 
       if (fileSizeToBig) {
@@ -82,15 +92,22 @@ export function Uploader({
       if (tooManyfiles) {
         toast.error("Muitos arquivos selecionados, o máximo é 1");
       }
+
+      if (invalidType) {
+        toast.error(
+          `Selecione ${mediaType === "video" ? "um vídeo" : "uma imagem"} válido.`,
+        );
+      }
     }
   }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "image/*": [] },
+    accept: mediaType === "video" ? { "video/*": [] } : { "image/*": [] },
     maxFiles: 1,
     multiple: false,
-    maxSize: 4 * 1024 * 1024,
+    maxSize:
+      mediaType === "video" ? 512 * 1024 * 1024 : 4 * 1024 * 1024,
     onDropRejected: rejectedFiles,
   });
 
@@ -149,6 +166,7 @@ export function Uploader({
         isDeleting: false,
         isLoading: false,
       }));
+      onFileSelected?.(null);
 
       toast.success("Arquivo removido com sucesso");
     } catch {
@@ -173,18 +191,24 @@ export function Uploader({
   }
 
   function renderContent() {
-    if (!fileState.file) {
-      return <RenderEmptyState isDragActive={isDragActive} />;
+    if (!fileState.file && !fileKey) {
+      return (
+        <RenderEmptyState isDragActive={isDragActive} mediaType={mediaType} />
+      );
     }
 
-    if (status === "error") {
+    if (status === "error" && fileState.file) {
       return <RenderErrorState onSelectAgain={handleSelectAgain} />;
     }
 
-    if (status === "uploading") {
+    if (status === "uploading" && fileState.file) {
       return (
         <div className="flex w-full flex-col items-center gap-3 text-center">
-          <RenderUploadingState progress={progress} file={fileState.file} />
+          <RenderUploadingState
+            progress={progress}
+            file={fileState.file}
+            mediaType={mediaType}
+          />
         </div>
       );
     }
@@ -192,7 +216,11 @@ export function Uploader({
     return fileState.objectUrl ? (
       <RenderUploadedState
         previewUrl={fileState.objectUrl}
-        fileName={fileState.file.name}
+        fileName={
+          fileState.file?.name ??
+          (mediaType === "video" ? "Vídeo salvo" : "Imagem salva")
+        }
+        mediaType={mediaType}
         isDeleting={fileState.isDeleting ?? false}
         isLoading={fileState.isLoading ?? false}
         handleRemoveFile={handleRemoveFile}

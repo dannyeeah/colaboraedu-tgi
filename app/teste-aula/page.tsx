@@ -10,6 +10,38 @@ type PageProps = {
   }>;
 };
 
+type BlocoConteudo = {
+  type?: string;
+  text?: string;
+  content?: BlocoConteudo[];
+};
+
+function formatarConteudoAula(descricao: string | null | undefined): string {
+  if (!descricao) return "Descrição não disponível.";
+
+  try {
+    const documento: BlocoConteudo = JSON.parse(descricao);
+
+    function extrairTexto(bloco: BlocoConteudo): string {
+      if (bloco.type === "text") {
+        return bloco.text ?? "";
+      }
+
+      const texto = (bloco.content ?? []).map(extrairTexto).join("");
+
+      if (["paragraph", "heading", "listItem"].includes(bloco.type ?? "")) {
+        return texto + "\n";
+      }
+
+      return texto;
+    }
+
+    return extrairTexto(documento).trim();
+  } catch {
+    return descricao;
+  }
+}
+
 export default async function TesteAulaPage({
   searchParams,
 }: PageProps) {
@@ -74,8 +106,8 @@ const aula = aulaId !== undefined
               {aula.title}
             </h2>
 
-            <p className="mt-4 whitespace-pre-wrap">
-              {aula.description || "Descrição não disponível."}
+              <p className="mt-4 whitespace-pre-wrap">
+                {formatarConteudoAula(aula.description)}
             </p>
           </section>
 

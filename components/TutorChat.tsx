@@ -53,8 +53,8 @@ export default function TutorChat({
     setPergunta("");
   }
 
-  async function enviarPergunta() {
-    const texto = pergunta.trim();
+  async function enviarPergunta(perguntaSugerida?: string) {
+  const texto = (perguntaSugerida ?? pergunta).trim();
 
     
 const historico = mensagens
@@ -257,6 +257,30 @@ const historico = mensagens
               </div>
             )}
 
+            {/* Perguntas sugeridas */}
+{mensagens.length === 0 && (
+  <div className="space-y-2">
+    <p className="text-xs font-medium text-muted-foreground">
+      Experimente perguntar:
+    </p>
+
+    {[
+      "Explique esta aula de forma simples",
+      "Me dê um exemplo prático desta aula",
+      "Faça uma pergunta para testar meu conhecimento",
+    ].map((sugestao) => (
+      <button
+        key={sugestao}
+        type="button"
+        disabled={carregando}
+        onClick={() => void enviarPergunta(sugestao)}
+        className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-accent disabled:opacity-50"
+      >
+        {sugestao}
+      </button>
+    ))}
+  </div>
+)}
             {/* Histórico de mensagens */}
             {mensagens.map((mensagem, indice) => (
               <div

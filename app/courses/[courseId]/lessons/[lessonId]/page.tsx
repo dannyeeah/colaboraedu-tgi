@@ -11,6 +11,44 @@ type PageProps = {
   }>;
 };
 
+type BlocoConteudo = {
+  type?: string;
+  text?: string;
+  content?: BlocoConteudo[];
+};
+
+function formatarConteudoAula(descricao: string | null | undefined): string {
+  if (!descricao) return "Descrição não disponível.";
+
+  try {
+    const documento: BlocoConteudo = JSON.parse(descricao);
+
+    function extrairTexto(bloco: BlocoConteudo): string {
+      if (bloco.type === "text") {
+        return bloco.text ?? "";
+      }
+
+      const texto = (bloco.content ?? [])
+        .map(extrairTexto)
+        .join("");
+
+      if (
+        ["paragraph", "heading", "listItem"].includes(
+          bloco.type ?? ""
+        )
+      ) {
+        return texto + "\n";
+      }
+
+      return texto;
+    }
+
+    return extrairTexto(documento).trim();
+  } catch {
+    return descricao;
+  }
+}
+
 export default async function LessonPage({ params }: PageProps) {
   const { courseId, lessonId } = await params;
 
@@ -79,7 +117,7 @@ export default async function LessonPage({ params }: PageProps) {
             </p>
 
             <div className="mt-6 whitespace-pre-wrap">
-              {aulaAtual.description || "Descrição não disponível."}
+              {formatarConteudoAula(aulaAtual.description)}
             </div>
           </section>
 
@@ -115,11 +153,14 @@ export default async function LessonPage({ params }: PageProps) {
         </div>
       </div>
 
-      <TutorChat
-        cursoId={courseId}
-        aulaId={lessonId}
-        tituloAula={aulaAtual.title}
-      />
+      
+<TutorChat
+  key={`${courseId}:${lessonId}`}
+  cursoId={courseId}
+  aulaId={lessonId}
+  tituloAula={aulaAtual.title}
+/>
+
     </main>
   );
 }

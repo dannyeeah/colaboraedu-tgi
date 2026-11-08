@@ -39,10 +39,12 @@ import { useUploadThing } from "@/lib/uploadthing";
 import { CreateCourse } from "./actions";
 import { useRouter } from "next/navigation";
 import { tryCatch } from "@/hooks/try-catch";
+import { useConfetti } from "@/hooks/use-confetti";
 
 export default function CourseCreationgPage() {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const { triggerConfetti } = useConfetti();
 
   const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<
@@ -112,7 +114,7 @@ export default function CourseCreationgPage() {
       if (result.status === "success") {
         setUploadStatus("success");
         toast.success(result.message);
-
+        triggerConfetti();
         form.reset();
         router.push("/admin/courses");
       } else if (result.status === "error") {

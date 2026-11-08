@@ -1,4 +1,5 @@
 import { getIndividualCourse } from "@/app/data/course/get-course";
+import Link from "next/link";
 import { RenderDescription } from "@/components/rich-text-editor/RenderDescription";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -124,25 +125,27 @@ export default async function SlugPage({ params }: { params: Params }) {
                   <CollapsibleContent>
                     <div className="border-t bg-muted/20">
                       <div className="p-6 pt-4 space-y-3">
-                        {chapter.lessons.map((lesson, lessonIndex) => (
-                          <div
-                            key={lesson.id}
-                            className="flex items-center gap-4 rounded-lg p-3 hover:bg-accent transition-colors group"
-                          >
-                            <div className="flex size-8 items-center justify-center rounded-full bg-background border-2 border-primary/20">
-                              <Play className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                            </div>
+                       
+                          {chapter.lessons.map((lesson, lessonIndex) => (
+  <Link
+    key={lesson.id}
+    href={`/courses/${slug}/lessons/${lesson.id}`}
+    className="flex items-center gap-4 rounded-lg p-3 hover:bg-accent transition-colors group"
+  >
+    <div className="flex size-8 items-center justify-center rounded-full bg-background border-2 border-primary/20">
+      <Play className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+    </div>
 
-                            <div className="flex-1">
-                              <p className="font-medium text-sm">
-                                {lesson.title}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Lição {lessonIndex + 1}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
+    <div className="flex-1">
+      <p className="font-medium text-sm">
+        {lesson.title}
+      </p>
+      <p className="text-xs text-muted-foreground mt-1">
+        Lição {lessonIndex + 1}
+      </p>
+    </div>
+  </Link>
+))}
                       </div>
                     </div>
                   </CollapsibleContent>

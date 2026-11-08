@@ -3,10 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import TutorChat from "@/components/TutorChat";
 import { getStudentCourse } from "@/app/data/student/get-course";
+import { getIndividualCourse } from "@/app/data/course/get-course";
 
 type PageProps = {
   params: Promise<{
-    courseId: string;
+    slug: string;
     lessonId: string;
   }>;
 };
@@ -50,9 +51,13 @@ function formatarConteudoAula(descricao: string | null | undefined): string {
 }
 
 export default async function LessonPage({ params }: PageProps) {
-  const { courseId, lessonId } = await params;
+const { slug, lessonId } = await params;
 
-  const curso = await getStudentCourse(courseId);
+const cursoPublico = await getIndividualCourse(slug);
+
+const courseId = cursoPublico.id;
+
+const curso = await getStudentCourse(courseId);
 
   if (!curso) {
     notFound();

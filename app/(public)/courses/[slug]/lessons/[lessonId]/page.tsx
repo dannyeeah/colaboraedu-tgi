@@ -141,7 +141,7 @@ const curso = await getStudentCourse(courseId);
                   {capitulo.lessons.map((aula) => (
                     <Link
                       key={aula.id}
-                      href={`/courses/${courseId}/lessons/${aula.id}`}
+                      href={`/courses/${slug}/lessons/${aula.id}`}
                       className={`block rounded-lg p-3 text-sm ${
                         aula.id === lessonId
                           ? "bg-primary text-primary-foreground"

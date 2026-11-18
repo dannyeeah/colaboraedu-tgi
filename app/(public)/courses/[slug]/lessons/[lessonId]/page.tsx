@@ -4,6 +4,13 @@ import { notFound } from "next/navigation";
 import TutorChat from "@/components/TutorChat";
 import { getStudentCourse } from "@/app/data/student/get-course";
 import { getIndividualCourse } from "@/app/data/course/get-course";
+import { requireUser } from "@/app/data/user/require-user";
+
+export default async function LessonPage({ params }: PageProps) {
+  await requireUser(); // exige login antes de qualquer consulta
+
+  const { slug, lessonId } = await params;
+ 
 
 type PageProps = {
   params: Promise<{

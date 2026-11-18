@@ -2,11 +2,12 @@ import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 
 export async function getIndividualCourse(slug: string) {
-  const course = await prisma.course.findUnique({
-    where: {
-      slug: slug,
-    },
-    select: {
+  const course = await prisma.course.findFirst({
+  where: {
+    slug,
+    status: "Published",
+  },
+  select: {
       id: true,
       title: true,
       description: true,

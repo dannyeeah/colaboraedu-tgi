@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 
+
 export async function getStudentCourses() {
   return prisma.course.findMany({
     where: {

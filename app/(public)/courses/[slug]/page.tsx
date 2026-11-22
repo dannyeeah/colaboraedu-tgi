@@ -1,6 +1,12 @@
 import { getIndividualCourse } from "@/app/data/course/get-course";
 import Link from "next/link";
 import { RenderDescription } from "@/components/rich-text-editor/RenderDescription";
+import { getCourseProgress } from "@/app/data/student/get-course-progress";
+import { CourseProgress } from "./_components/CourseProgress";
+import { prisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { EnrollCourseButton } from "./_components/EnrollCourseButton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -23,6 +29,30 @@ type Params = Promise<{ slug: string }>;
 export default async function SlugPage({ params }: { params: Params }) {
   const { slug } = await params;
   const course = await getIndividualCourse(slug);
+
+const session = await auth.api.getSession({
+  headers: await headers(),
+});
+
+const enrollment = session
+  ? await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId: session.user.id,
+          courseId: course.id,
+        },
+      },
+    })
+  : null;
+
+const matriculaAtiva = enrollment?.status === "Active";
+
+const progresso =
+  session?.user.role !== "admin" && matriculaAtiva
+    ? await getCourseProgress(course.id)
+    : null;
+
+const estudante = session?.user.role !== "admin";
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 mt-5">
@@ -61,6 +91,32 @@ export default async function SlugPage({ params }: { params: Params }) {
               <span>{course.duration} horas</span>
             </Badge>
           </div>
+
+{session && estudante && (
+  <div className="mt-6 max-w-sm">
+    <EnrollCourseButton
+      courseId={course.id}
+      enrolled={matriculaAtiva}
+    />
+  </div>
+)}
+
+{progresso && (
+  <CourseProgress
+    totalLessons={progresso.totalLessons}
+    completedLessons={progresso.completedLessons}
+    percentage={progresso.percentage}
+  />
+)}
+
+{!session && (
+  <p className="mt-6 text-sm text-muted-foreground">
+    <Link href="/login" className="font-medium text-primary underline">
+      Entre na sua conta
+    </Link>{" "}
+    para se inscrever neste curso.
+  </p>
+)}
 
           <Separator className="my-8" />
 
@@ -127,9 +183,9 @@ export default async function SlugPage({ params }: { params: Params }) {
                       <div className="p-6 pt-4 space-y-3">
                        
                           {chapter.lessons.map((lesson, lessonIndex) => (
-  <Link
-    key={lesson.id}
-    href={`/courses/${slug}/lessons/${lesson.id}`}
+                          <Link
+                           key={lesson.id}
+                            href={`/courses/${slug}/lessons/${lesson.id}`}
     className="flex items-center gap-4 rounded-lg p-3 hover:bg-accent transition-colors group"
   >
     <div className="flex size-8 items-center justify-center rounded-full bg-background border-2 border-primary/20">

@@ -23,6 +23,8 @@ model User {
   sessions      Session[]
   accounts      Account[]
   courses       Course[]
+  enrollments    Enrollment[]
+  lessonProgress LessonProgress[]
 
   role       String?
   banned     Boolean?  @default(false)
@@ -111,7 +113,7 @@ model Course {
   updatedAt        DateTime @updatedAt
 
   chapter Chapter[]
-
+  enrollments Enrollment[]
   @@index([userId])
   @@map("courses")
 }
@@ -155,4 +157,44 @@ model Lesson {
   updatedAt DateTime @updatedAt
   Chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   chapterId String
+  progress LessonProgress[]
+}
+
+
+
+
+model Enrollment {
+  id        String           @id @default(cuid())
+  amount    Int              @default(0)
+  status    EnrollmentStatus @default(Pending)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime
+  courseId  String
+  userId    String
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model LessonProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  lessonId    String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([lessonId])
+}
+
+
+enum EnrollmentStatus {
+  Pending
+  Active
+  Cancelled
 }

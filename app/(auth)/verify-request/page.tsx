@@ -29,23 +29,26 @@ export default function VerifyRequest() {
   const email = params.get("email") as string;
   const isOtpCompleted = otp.length === 6;
 
-  function verifyOtp() {
-    startTransition(async () => {
-      await authClient.signIn.emailOtp({
-        email: email,
-        otp: otp,
-        fetchOptions: {
-          onSuccess: () => {
-            toast.success("Email verify");
-            router.push("/");
-          },
-          onError: () => {
-            toast.error("Error verifying Email/OTP");
-          },
+  
+function verifyOtp() {
+  startTransition(async () => {
+    await authClient.signIn.emailOtp({
+      email: email,
+      otp: otp,
+      fetchOptions: {
+        onSuccess: () => {
+          toast.success("E-mail verificado com sucesso!");
+          router.replace("/login");
+          router.refresh();
         },
-      });
+        onError: () => {
+          toast.error("Código inválido ou expirado.");
+        },
+      },
     });
-  }
+  });
+}
+
 
   return (
     <Card className="w-full mx-auto">

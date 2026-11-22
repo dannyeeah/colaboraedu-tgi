@@ -5,11 +5,9 @@ import TutorChat from "@/components/TutorChat";
 import { getStudentCourse } from "@/app/data/student/get-course";
 import { getIndividualCourse } from "@/app/data/course/get-course";
 import { requireUser } from "@/app/data/user/require-user";
+import { prisma } from "@/lib/db";
+import { CompleteLessonButton } from "./_components/CompleteLessonButton";
 
-export default async function LessonPage({ params }: PageProps) {
-  await requireUser(); // exige login antes de qualquer consulta
-
-  const { slug, lessonId } = await params;
  
 
 type PageProps = {
@@ -57,14 +55,23 @@ function formatarConteudoAula(descricao: string | null | undefined): string {
   }
 }
 
+
+
 export default async function LessonPage({ params }: PageProps) {
-const { slug, lessonId } = await params;
+  const session = await requireUser();
 
-const cursoPublico = await getIndividualCourse(slug);
+  const { slug, lessonId } = await params;
 
-const courseId = cursoPublico.id;
+  const cursoPublico = await getIndividualCourse(slug);
 
-const curso = await getStudentCourse(courseId);
+  if (!cursoPublico) {
+    notFound();
+  }
+
+  const courseId = cursoPublico.id;
+
+  const curso = await getStudentCourse(courseId);
+
 
   if (!curso) {
     notFound();
@@ -82,6 +89,31 @@ const curso = await getStudentCourse(courseId);
   if (!aulaAtual) {
     notFound();
   }
+
+  const [progresso, matricula] = await Promise.all([
+    prisma.lessonProgress.findUnique({
+      where: {
+        userId_lessonId: {
+          userId: session.user.id,
+          lessonId,
+        },
+      },
+    }),
+
+    prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId: session.user.id,
+          courseId,
+        },
+      },
+    }),
+  ]);
+
+  const aulaConcluida = progresso?.completed === true;
+  const matriculaAtiva = matricula?.status === "Active";
+  const podeConcluir =
+    session.user.role !== "admin" && matriculaAtiva;
 
   const videoUrl = aulaAtual.videoKey
     ? aulaAtual.videoKey.startsWith("http")
@@ -128,9 +160,25 @@ const curso = await getStudentCourse(courseId);
               {aulaAtual.capitulo}
             </p>
 
-            <div className="mt-6 whitespace-pre-wrap">
-              {formatarConteudoAula(aulaAtual.description)}
-            </div>
+           
+<div className="mt-6 whitespace-pre-wrap">
+  {formatarConteudoAula(aulaAtual.description)}
+</div>
+
+{podeConcluir && (
+  <CompleteLessonButton
+    lessonId={lessonId}
+    completed={aulaConcluida}
+  />
+)}
+
+{session.user.role !== "admin" && !matriculaAtiva && (
+  <p className="mt-6 text-sm text-muted-foreground">
+    Para registrar seu progresso, você precisa
+    estar matriculado neste curso.
+  </p>
+)}
+
           </section>
 
           <aside className="rounded-xl border p-5">

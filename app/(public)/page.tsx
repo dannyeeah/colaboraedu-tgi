@@ -3,19 +3,24 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
+
 interface featureProps {
   title: string;
   description: string;
   icon: string;
+  href?: string;
 }
 
 const features: featureProps[] = [
-  {
-    title: "Cursos abrangentes",
-    description:
-      "Acesse uma ampla variedade de cursos cuidadosamente selecionados e elaborados",
-    icon: "🎓", // 📚
-  },
+  
+{
+  title: "Cursos abrangentes",
+  description:
+    "Acesse uma ampla variedade de cursos cuidadosamente selecionados e elaborados",
+  icon: "🎓",
+  href: "/courses",
+},
+
   {
     title: "Aprendizagem interativa",
     description:
@@ -76,17 +81,35 @@ export default function Home() {
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-32">
-        {features.map((feature, index) => (
-          <Card key={index} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="text-lg mb-4">{feature.icon}</div>
-              <CardTitle>{feature.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">{feature.description}</p>
-            </CardContent>
-          </Card>
-        ))}
+        
+{features.map((feature, index) => {
+  const card = (
+    <Card className="h-full transition-all duration-200 hover:shadow-lg">
+      <CardHeader>
+        <div className="mb-4 text-lg">{feature.icon}</div>
+        <CardTitle>{feature.title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground">
+          {feature.description}
+        </p>
+      </CardContent>
+    </Card>
+  );
+
+  return feature.href ? (
+    <Link
+      key={index}
+      href={feature.href}
+      className="block rounded-xl transition-transform hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+    >
+      {card}
+    </Link>
+  ) : (
+    <div key={index}>{card}</div>
+  );
+})}
+
       </section>
     </>
   );

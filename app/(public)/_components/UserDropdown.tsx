@@ -1,3 +1,6 @@
+
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,32 +13,47 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSignOut } from "@/hooks/use-signout";
+import { authClient } from "@/lib/auth-client";
 import {
   BookOpenIcon,
   ChevronDownIcon,
-  Home,
+  GraduationCapIcon,
+  HomeIcon,
   LayoutDashboardIcon,
   LogOutIcon,
 } from "lucide-react";
 import Link from "next/link";
 
-interface iAppProps {
+interface UserDropdownProps {
   name: string;
   email: string;
   image: string;
 }
 
-export function UserDropdown({ name, image }: iAppProps) {
+export function UserDropdown({
+  name,
+  email,
+  image,
+}: UserDropdownProps) {
   const handleSignOut = useSignOut();
+  const { data: session } = authClient.useSession();
+
+  const isAdmin = session?.user?.role === "admin";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-auto p-0 hover:bg-transparent">
+        <Button
+          variant="ghost"
+          className="h-auto gap-2 p-0 hover:bg-transparent"
+        >
           <Avatar>
-            <AvatarImage src={image} alt="Profile image" />
-            <AvatarFallback>{name[0].toUpperCase()}</AvatarFallback>
+            <AvatarImage src={image} alt="Foto do perfil" />
+            <AvatarFallback>
+              {name.charAt(0).toUpperCase()}
+            </AvatarFallback>
           </Avatar>
+
           <ChevronDownIcon
             size={16}
             className="opacity-60"
@@ -43,50 +61,55 @@ export function UserDropdown({ name, image }: iAppProps) {
           />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-w-64">
+
+      <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="flex min-w-0 flex-col">
-          <span className="text-muted-foreground truncate text-sm font-medium">
+          <span className="truncate text-sm font-medium">
             {name}
           </span>
-          <span className="text-muted-foreground truncate text-xs">
-            daniel@teste.com
+          <span className="truncate text-xs text-muted-foreground">
+            {email}
           </span>
         </DropdownMenuLabel>
+
         <DropdownMenuSeparator />
+
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link href="/">
-              <Home size={16} className="opacity-60" aria-hidden="true" />
-              <span>Home</span>
+              <HomeIcon size={16} />
+              <span>Início</span>
             </Link>
           </DropdownMenuItem>
 
           <DropdownMenuItem asChild>
             <Link href="/courses">
-              <BookOpenIcon
-                size={16}
-                className="opacity-60"
-                aria-hidden="true"
-              />
-              <span>Courses</span>
+              <BookOpenIcon size={16} />
+              <span>Explorar Cursos</span>
             </Link>
           </DropdownMenuItem>
 
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard">
-              <LayoutDashboardIcon
-                size={16}
-                className="opacity-60"
-                aria-hidden="true"
-              />
-              <span>Dashboard</span>
-            </Link>
-          </DropdownMenuItem>
+          {session && (
+            <DropdownMenuItem asChild>
+              {isAdmin ? (
+                <Link href="/admin">
+                  <LayoutDashboardIcon size={16} />
+                  <span>Painel Administrativo</span>
+                </Link>
+              ) : (
+                <Link href="/student">
+                  <GraduationCapIcon size={16} />
+                  <span>Meus Cursos</span>
+                </Link>
+              )}
+            </DropdownMenuItem>
+          )}
         </DropdownMenuGroup>
+
         <DropdownMenuSeparator />
 
         <DropdownMenuItem onClick={handleSignOut}>
-          <LogOutIcon size={16} className="opacity-60" aria-hidden="true" />
+          <LogOutIcon size={16} />
           <span>Sair</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

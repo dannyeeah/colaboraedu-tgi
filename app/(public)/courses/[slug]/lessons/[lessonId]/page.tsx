@@ -112,8 +112,12 @@ export default async function LessonPage({ params }: PageProps) {
 
   const aulaConcluida = progresso?.completed === true;
   const matriculaAtiva = matricula?.status === "Active";
-  const podeConcluir =
-    session.user.role !== "admin" && matriculaAtiva;
+  
+const podeConcluir =
+  (session.user.role === "user" ||
+    session.user.role === "admin") &&
+  matriculaAtiva;
+
 
   const videoUrl = aulaAtual.videoKey
     ? aulaAtual.videoKey.startsWith("http")
@@ -172,12 +176,14 @@ export default async function LessonPage({ params }: PageProps) {
   />
 )}
 
-{session.user.role !== "admin" && !matriculaAtiva && (
+
+{!matriculaAtiva && (
   <p className="mt-6 text-sm text-muted-foreground">
     Para registrar seu progresso, você precisa
     estar matriculado neste curso.
   </p>
 )}
+
 
           </section>
 

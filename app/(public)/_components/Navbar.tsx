@@ -1,3 +1,4 @@
+
 "use client";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -8,33 +9,29 @@ import { UserDropdown } from "./UserDropdown";
 
 const navigationItems = [
   {
-    name: "Home",
+    name: "Início",
     href: "/",
   },
   {
-    name: "Courses",
+    name: "Explorar Cursos",
     href: "/courses",
-  },
-  {
-    name: "Dashboard",
-    href: "/dashboard",
   },
 ];
 
 export function Navbar() {
   const { data: session, isPending } = authClient.useSession();
 
+  const isAdmin = session?.user?.role === "admin";
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95">
-      <div className="container flex min-h-16 items-center mx-auto md:px-6 lg:px-8">
-        <Link href="/" className="flex items-center space-x-2 mr-4">
-          <span className="font-bold">DemocratizaEdu</span>
+      <div className="container mx-auto flex min-h-16 items-center px-4 md:px-6 lg:px-8">
+        <Link href="/" className="mr-6 flex items-center space-x-2">
+          <span className="font-bold">ColaboraEdu</span>
         </Link>
 
-        {/*navegação da area de trabalho */}
-
-        <nav className="hidden md:flex md:flex-1 md:items-center md:justify-between">
-          <div className="flex items-center space-x-2">
+        <nav className="flex flex-1 items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
             {navigationItems.map((item) => (
               <Link
                 key={item.name}
@@ -44,22 +41,44 @@ export function Navbar() {
                 {item.name}
               </Link>
             ))}
+
+            
+{!isPending && session && (
+  <>
+    <Link
+      href="/student"
+      className="text-sm font-medium transition-colors hover:text-primary"
+    >
+      Meus Cursos
+    </Link>
+
+    {isAdmin && (
+      <Link
+        href="/admin"
+        className="text-sm font-medium transition-colors hover:text-primary"
+      >
+        Painel Administrativo
+      </Link>
+    )}
+  </>
+)}
+
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-4">
             <ThemeToggle />
 
             {isPending ? null : session ? (
               <UserDropdown
                 email={session.user.email}
                 image={
-                  session?.user.image ??
-                  `https://avatar.vercel.sh/${session?.user.email}`
+                  session.user.image ??
+                  `https://avatar.vercel.sh/${session.user.email}`
                 }
                 name={
                   session.user.name && session.user.name.length > 0
                     ? session.user.name
-                    : session?.user.email.split("@")[0]
+                    : session.user.email.split("@")[0]
                 }
               />
             ) : (
@@ -68,10 +87,14 @@ export function Navbar() {
                   href="/login"
                   className={buttonVariants({ variant: "secondary" })}
                 >
-                  Login
+                  Entrar
                 </Link>
-                <Link href="/login" className={buttonVariants()}>
-                  Comece
+
+                <Link
+                  href="/login"
+                  className={buttonVariants()}
+                >
+                  Começar
                 </Link>
               </>
             )}

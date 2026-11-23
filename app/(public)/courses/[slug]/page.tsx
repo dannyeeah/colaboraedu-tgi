@@ -47,12 +47,16 @@ const enrollment = session
 
 const matriculaAtiva = enrollment?.status === "Active";
 
+
+const podeEstudar =
+  session?.user.role === "user" ||
+  session?.user.role === "admin";
+
 const progresso =
-  session?.user.role !== "admin" && matriculaAtiva
+  podeEstudar && matriculaAtiva
     ? await getCourseProgress(course.id)
     : null;
 
-const estudante = session?.user.role !== "admin";
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 mt-5">
@@ -92,7 +96,8 @@ const estudante = session?.user.role !== "admin";
             </Badge>
           </div>
 
-{session && estudante && (
+
+{session && podeEstudar && (
   <div className="mt-6 max-w-sm">
     <EnrollCourseButton
       courseId={course.id}
@@ -100,6 +105,7 @@ const estudante = session?.user.role !== "admin";
     />
   </div>
 )}
+
 
 {progresso && (
   <CourseProgress

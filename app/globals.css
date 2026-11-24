@@ -50,40 +50,61 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Identidade ColaboraEdu */
+  --background: #f7f8ff;
+  --foreground: #1e2545;
+
+  --card: #ffffff;
+  --card-foreground: #1e2545;
+
+  --popover: #ffffff;
+  --popover-foreground: #1e2545;
+
+  /* Roxo principal */
+  --primary: #635bdb;
+  --primary-foreground: #ffffff;
+
+  /* Azul suave */
+  --secondary: #e7f4ff;
+  --secondary-foreground: #2455a4;
+
+  /* Áreas neutras */
+  --muted: #eef0fa;
+  --muted-foreground: #626b85;
+
+  /* Destaques */
+  --accent: #eae7ff;
+  --accent-foreground: #4f46b5;
+
+  /* Estados e bordas */
+  --destructive: #dc3545;
+  --border: #e1e5f2;
+  --input: #d9deef;
+  --ring: #8177ee;
+
+  /* Gráficos */
+  --chart-1: #635bdb;
+  --chart-2: #38bdf8;
+  --chart-3: #fbbf24;
+  --chart-4: #10b981;
+  --chart-5: #fb7185;
+
+  /* Bordas mais modernas */
+  --radius: 0.875rem;
+
+  /* Menu lateral */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1e2545;
+  --sidebar-primary: #635bdb;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eae7ff;
+  --sidebar-accent-foreground: #4f46b5;
+  --sidebar-border: #e1e5f2;
+  --sidebar-ring: #8177ee;
 }
+
 
 .dark {
   --background: oklch(0.145 0 0);
@@ -128,5 +149,67 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* ColaboraEdu — identidade visual */
+
+@layer components {
+  /* Cards mais modernos */
+  .colabora-card {
+    @apply rounded-2xl border bg-card p-6;
+    box-shadow: 0 6px 24px rgb(99 91 219 / 7%);
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .colabora-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgb(99 91 219 / 13%);
+  }
+
+  /* Botões com destaque */
+  .colabora-button {
+    @apply inline-flex items-center justify-center
+      rounded-xl bg-primary px-5 py-3
+      font-semibold text-primary-foreground;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .colabora-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgb(99 91 219 / 25%);
+  }
+
+  /* Títulos de seções */
+  .colabora-title {
+    @apply text-2xl font-bold tracking-tight;
+    color: var(--foreground);
+  }
+
+  /* Destaque colorido */
+  .colabora-gradient {
+    background: linear-gradient(
+      135deg,
+      #635bdb 0%,
+      #818cf8 55%,
+      #38bdf8 100%
+    );
+    color: white;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .colabora-card,
+  .colabora-button {
+    transition: none;
+  }
+
+  .colabora-card:hover,
+  .colabora-button:hover {
+    transform: none;
   }
 }

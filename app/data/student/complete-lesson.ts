@@ -13,9 +13,7 @@ export async function completeLesson(lessonId: string) {
   }
 
   const lesson = await prisma.lesson.findUnique({
-    where: {
-      id: lessonId,
-    },
+    where: { id: lessonId },
     select: {
       id: true,
       Chapter: {
@@ -37,11 +35,12 @@ export async function completeLesson(lessonId: string) {
   }
 
   const course = lesson.Chapter.Course;
+  const userId = session.user.id;
 
   const enrollment = await prisma.enrollment.findUnique({
     where: {
       userId_courseId: {
-        userId: session.user.id,
+        userId,
         courseId: course.id,
       },
     },
@@ -53,23 +52,77 @@ export async function completeLesson(lessonId: string) {
     );
   }
 
-  await prisma.lessonProgress.upsert({
-    where: {
-      userId_lessonId: {
-        userId: session.user.id,
-        lessonId,
+  await prisma.$transaction(async (tx) => {
+    // 1. Registrar a conclusão da aula
+    await tx.lessonProgress.upsert({
+      where: {
+        userId_lessonId: {
+          userId,
+          lessonId,
+        },
       },
-    },
-    update: {
-      completed: true,
-      completedAt: new Date(),
-    },
-    create: {
-      userId: session.user.id,
-      lessonId,
-      completed: true,
-      completedAt: new Date(),
-    },
+      update: {
+        completed: true,
+      },
+      create: {
+        userId,
+        lessonId,
+        completed: true,
+        completedAt: new Date(),
+      },
+    });
+
+    // 2. Conceder 10 XP pela aula (somente uma vez)
+    await tx.xpTransaction.createMany({
+      data: [
+        {
+          id: crypto.randomUUID(),
+          userId,
+          amount: 10,
+          reason: "LESSON_COMPLETED",
+          reference: `lesson:${userId}:${lessonId}`,
+        },
+      ],
+      skipDuplicates: true,
+    });
+
+    // 3. Contar todas as aulas do curso
+    const totalLessons = await tx.lesson.count({
+      where: {
+        Chapter: {
+          courseId: course.id,
+        },
+      },
+    });
+
+    // 4. Contar as aulas concluídas pelo estudante
+    const completedLessons = await tx.lessonProgress.count({
+      where: {
+        userId,
+        completed: true,
+        lesson: {
+          Chapter: {
+            courseId: course.id,
+          },
+        },
+      },
+    });
+
+    // 5. Conceder 100 XP ao concluir 100% do curso
+    if (totalLessons > 0 && completedLessons === totalLessons) {
+      await tx.xpTransaction.createMany({
+        data: [
+          {
+            id: crypto.randomUUID(),
+            userId,
+            amount: 100,
+            reason: "COURSE_COMPLETED",
+            reference: `course:${userId}:${course.id}`,
+          },
+        ],
+        skipDuplicates: true,
+      });
+    }
   });
 
   revalidatePath(`/courses/${course.slug}/lessons/${lessonId}`);

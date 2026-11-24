@@ -1,6 +1,6 @@
-
 import Link from "next/link";
-
+import { getXpHistory } from "@/app/data/student/get-xp-history";
+import { XpHistory } from "./_components/xp-history";
 import { CourseFilters } from "./_components/course-filters";
 import { requireStudent } from "@/app/data/student/require-student";
 import { getMyCourses } from "@/app/data/student/get-my-courses";
@@ -8,22 +8,26 @@ import { getCourseProgress } from "@/app/data/student/get-course-progress";
 import { getNextLesson } from "@/app/data/student/get-next-lesson";
 import { getUserGamification } from "@/app/data/student/get-user-gamification";
 
+import { AchievementsPanel } from "./_components/achievements-panel";
+import { getUserAchievements } from "@/app/data/student/get-user-achievements";
+
 export default async function StudentPage() {
   const session = await requireStudent();
 
-  const [enrollments, gamification] = await Promise.all([
+  const [enrollments, gamification, achievements, xpHistory] =
+  await Promise.all([
     getMyCourses(),
     getUserGamification(),
+    getUserAchievements(),
+    getXpHistory(),
   ]);
 
   const nome = session.user.name || "Estudante";
 
   const coursesWithProgress = await Promise.all(
-    enrollments.map(async (enrollment) => {
-      const [progress, nextLessonId] = await Promise.all([
+    enrollments.map(async (enrollment) => {      const [progress, nextLessonId] = await Promise.all([
         getCourseProgress(enrollment.courseId),
-        getNextLesson(enrollment.courseId),
-      ]);
+        getNextLesson(enrollment.courseId),      ]);
 
       return {
         ...enrollment,
@@ -218,6 +222,19 @@ export default async function StudentPage() {
         </div>
       </section>
 
+      {/* Conquistas e medalhas */}
+      <div className="mt-8">
+        <AchievementsPanel achievements={achievements} />
+      </div>
+
+{/* Histórico de XP */}
+<div className="mt-8">
+  <XpHistory
+    transactions={xpHistory}
+    totalXp={gamification.totalXp}
+  />
+</div>
+
       {/* Continuar aprendendo */}
       {cursoParaContinuar && (
         <section className="colabora-card mt-8">
@@ -306,8 +323,7 @@ export default async function StudentPage() {
 
       {/* Meus cursos */}
       <section className="colabora-card mt-8">
-        <h2 className="text-2xl font-bold">
-          🎓 Meus Cursos
+        <h2 className="text-2xl font-bold">          🎓 Meus Cursos
         </h2>
 
         {coursesWithProgress.length === 0 ? (
@@ -357,8 +373,7 @@ export default async function StudentPage() {
                         </span>
                       </div>
 
-                      <div className="mt-2 h-3 overflow-hidden rounded-full bg-muted">
-                        <div
+                      <div className="mt-2 h-3 overflow-hidden rounded-full bg-muted">                        <div
                           className="h-full rounded-full bg-gradient-to-r from-violet-600 to-sky-400 transition-all"
                           style={{
                             width: `${progress.percentage}%`,
@@ -381,8 +396,7 @@ export default async function StudentPage() {
                       >
                         {progress.totalLessons > 0 &&
                         progress.percentage === 100
-                          ? "Revisar curso"
-                          : "Continuar estudando"}
+                          ? "Revisar curso"                          : "Continuar estudando"}
                       </Link>
                     ) : (
                       <p className="mt-5 text-sm text-muted-foreground">

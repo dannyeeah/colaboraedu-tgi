@@ -1,6 +1,6 @@
 
 "use server";
-
+import { unlockAchievements } from "@/lib/achievements";
 import { prisma } from "@/lib/db";
 import { requireStudent } from "./require-student";
 import { revalidatePath } from "next/cache";
@@ -125,6 +125,10 @@ export async function completeLesson(lessonId: string) {
     }
   });
 
+    // 6. Verificar e desbloquear conquistas
+  await unlockAchievements(userId);
+
+  // 7. Atualizar as páginas
   revalidatePath(`/courses/${course.slug}/lessons/${lessonId}`);
   revalidatePath("/student");
 }

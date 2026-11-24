@@ -4,6 +4,7 @@ import { prisma } from "./db";
 import { env } from "./env";
 import { admin, emailOTP } from "better-auth/plugins";
 import { resend } from "./resend";
+import { ac, student, teacher, superadmin } from "./permissions";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -32,6 +33,15 @@ export const auth = betterAuth({
         });
       },
     }),
-    admin(),
+    admin({
+  ac,
+  defaultRole: "user",
+  adminRoles: ["superadmin"],
+  roles: {
+    user: student,
+    admin: teacher,
+    superadmin: superadmin,
+  },
+}),
   ],
 });

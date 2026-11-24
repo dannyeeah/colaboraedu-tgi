@@ -50,7 +50,8 @@ const matriculaAtiva = enrollment?.status === "Active";
 
 const podeEstudar =
   session?.user.role === "user" ||
-  session?.user.role === "admin";
+session?.user.role === "admin" ||
+session?.user.role === "superadmin";
 
 const progresso =
   podeEstudar && matriculaAtiva

@@ -1,8 +1,5 @@
-
-
 import { getUsers } from "@/app/data/admin/get-users";
 import { PromoteUserButton } from "./_components/PromoteUserButton";
-
 
 export default async function AdminUsersPage() {
   const users = await getUsers();
@@ -33,40 +30,65 @@ export default async function AdminUsersPage() {
 
           <tbody>
             {users.map((user) => (
-              <tr key={user.id} className="border-t">
-                <td className="p-4">{user.name}</td>
-
-                <td className="p-4">{user.email}</td>
+              <tr
+                key={user.id}
+                className="border-t transition-colors hover:bg-muted/30"
+              >
+                <td className="p-4 font-medium">
+                  {user.name}
+                </td>
 
                 <td className="p-4">
-                  {user.role === "admin"
-                    ? "Administrador"
-                    : "Estudante"}
+                  {user.email}
+                </td>
+
+                <td className="p-4">
+                  {user.role === "superadmin" ? (
+                    <span className="inline-flex rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                      Superadministrador
+                    </span>
+                  ) : user.role === "admin" ? (
+                    <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                      Professor
+                    </span>
+                  ) : user.role === "user" ? (
+                    <span className="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 dark:bg-green-950 dark:text-green-300">
+                      Estudante
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      Perfil indefinido
+                    </span>
+                  )}
                 </td>
 
                 <td className="p-4">
                   {new Date(user.createdAt).toLocaleDateString(
-                    "pt-BR"
+                    "pt-BR",
                   )}
                 </td>
 
-                
-
-<td className="p-4">
-  {user.role !== "admin" ? (
-    <PromoteUserButton
-      userId={user.id}
-      userName={user.name}
-    />
-  ) : (
-    <span className="text-muted-foreground">
-      Administrador
-    </span>
-  )}
-</td>
-</tr>
-
-              
+                <td className="p-4">
+                  {user.role === "user" ? (
+                    <PromoteUserButton
+                      userId={user.id}
+                      userName={user.name}
+                    />
+                  ) : user.role === "superadmin" ? (
+                    <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                      Perfil protegido
+                    </span>
+                  ) : user.role === "admin" ? (
+                    <span className="text-muted-foreground">
+                      Professor
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      Indisponível
+                    </span>
+                  )}
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>

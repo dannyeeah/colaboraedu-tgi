@@ -1,16 +1,16 @@
 import "server-only";
-import { requireAdmin } from "./require-admin";
+
+import { requireCourseOwner } from "./require-course-owner";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 
 export async function adminGetCourse(courseId: string) {
-  await new Promise((resolver) => setTimeout(resolver, 2000));
-
-  await requireAdmin();
+  const { course } = await requireCourseOwner(courseId);
 
   const data = await prisma.course.findUnique({
     where: {
-      id: courseId,
+      id: course.id,
+      userId: course.userId,
     },
     select: {
       id: true,

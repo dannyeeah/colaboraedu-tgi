@@ -21,7 +21,9 @@ const navigationItems = [
 export function Navbar() {
   const { data: session, isPending } = authClient.useSession();
 
-  const isAdmin = session?.user?.role === "admin";
+  const isAdmin =
+  session?.user?.role === "admin" ||
+  session?.user?.role === "superadmin";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95">

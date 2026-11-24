@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -26,8 +25,15 @@ import {
 
 import Link from "next/link";
 
-const data = {
-  navMain: [
+type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
+  isSuperAdmin?: boolean;
+};
+
+export function AppSidebar({
+  isSuperAdmin = false,
+  ...props
+}: AppSidebarProps) {
+  const navMain = [
     {
       title: "Visão Geral",
       url: "/admin",
@@ -38,29 +44,29 @@ const data = {
       url: "/admin/courses",
       icon: <BookOpenIcon />,
     },
+
+    ...(isSuperAdmin
+      ? [
+          {
+            title: "Gerenciar Usuários",
+            url: "/admin/users",
+            icon: <UsersIcon />,
+          },
+        ]
+      : []),
+
     {
-      title: "Gerenciar Usuários",
-      url: "/admin/users",
-      icon: <UsersIcon />,
+      title: "Meus Cursos",
+      url: "/student",
+      icon: <GraduationCapIcon />,
     },
-
-{
-  title: "Meus Cursos",
-  url: "/student",
-  icon: <GraduationCapIcon />,
-},
-
     {
       title: "Voltar ao ColaboraEdu",
       url: "/",
       icon: <HomeIcon />,
     },
-  ],
-};
+  ];
 
-export function AppSidebar({
-  ...props
-}: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -72,6 +78,7 @@ export function AppSidebar({
             >
               <Link href="/">
                 <GraduationCapIcon className="size-5!" />
+
                 <span className="text-base font-semibold">
                   ColaboraEdu
                 </span>
@@ -82,7 +89,7 @@ export function AppSidebar({
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
       </SidebarContent>
 
       <SidebarFooter>

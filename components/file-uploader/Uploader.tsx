@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FileRejection, useDropzone } from "react-dropzone";
 import { Card, CardContent } from "../ui/card";
 import { cn } from "@/lib/utils";
@@ -12,18 +12,6 @@ import {
 } from "./RenderState";
 import { toast } from "sonner";
 import { useConstructUrl } from "@/hooks/use-construct-url";
-
-interface UploaderState {
-  file: File | null;
-  objectUrl: string | null | undefined;
-  uploading?: boolean;
-  progress?: number;
-  error?: boolean;
-  fileType?: string;
-  id?: string | null;
-  isDeleting?: boolean;
-  isLoading?: boolean;
-}
 
 interface UploaderProps {
   onFileSelected?: (file: File | null) => void;
@@ -41,191 +29,185 @@ export function Uploader({
   status,
 }: UploaderProps) {
   const fileUrl = useConstructUrl(fileKey ?? "");
-  const [fileState, setFileState] = useState<UploaderState>({
-    file: null,
-    objectUrl: fileKey ? fileUrl : null,
-  });
 
-  const onDrop = useCallback(
-    async (acceptedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-        const file = acceptedFiles[0];
-        const objectUrl = URL.createObjectURL(file);
+  const [selectedFile, setSelectedFile] =
+    useState<File | null>(null);
 
-        setFileState({
-          file: file,
-          objectUrl,
-          isLoading: true,
-        });
-        onFileSelected?.(file);
+  const [previewUrl, setPreviewUrl] =
+    useState<string | null>(null);
 
-        await new Promise((resolve) => setTimeout(resolve, 700));
-        setFileState((prev) => ({ ...prev, isLoading: false }));
-        toast.success(
-          `${mediaType === "video" ? "Vídeo" : "Imagem"} adicionada com sucesso.`,
-          { duration: 4000 },
-        );
-      }
-    },
-    [mediaType, onFileSelected],
-  );
+  const [removed, setRemoved] = useState(false);
 
-  function rejectedFiles(fileRejection: FileRejection[]) {
-    if (fileRejection.length) {
-      const tooManyfiles = fileRejection.find(
-        (rejection) =>
-          rejection.errors.some((error) => error.code === "too-many-files"),
-      );
+  const isUploading = status === "uploading";
 
-      const fileSizeToBig = fileRejection.find(
-        (rejection) =>
-          rejection.errors.some((error) => error.code === "file-too-large"),
-      );
-      const invalidType = fileRejection.find((rejection) =>
-        rejection.errors.some((error) => error.code === "file-invalid-type"),
-      );
-
-      if (fileSizeToBig) {
-        toast.error("O tamanho do arquivo excede os limites");
-      }
-
-      if (tooManyfiles) {
-        toast.error("Muitos arquivos selecionados, o máximo é 1");
-      }
-
-      if (invalidType) {
-        toast.error(
-          `Selecione ${mediaType === "video" ? "um vídeo" : "uma imagem"} válido.`,
-        );
-      }
-    }
-  }
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: mediaType === "video" ? { "video/*": [] } : { "image/*": [] },
-    maxFiles: 1,
-    multiple: false,
-    maxSize:
-      mediaType === "video" ? 512 * 1024 * 1024 : 4 * 1024 * 1024,
-    onDropRejected: rejectedFiles,
-  });
-
-  async function handleRemoveFile() {
-    if (fileState.isDeleting || fileState.isLoading || !fileState.objectUrl) {
+  useEffect(() => {
+    if (!selectedFile) {
+      setPreviewUrl(null);
       return;
     }
 
-    setFileState((prev) => ({
-      ...prev,
-      isDeleting: true,
-      error: false,
-    }));
+    const objectUrl = URL.createObjectURL(selectedFile);
 
-    try {
-      const minimumAnimation = new Promise((resolve) =>
-        setTimeout(resolve, 2000),
+    setPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [selectedFile]);
+
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      if (isUploading || acceptedFiles.length === 0) {
+        return;
+      }
+
+      const file = acceptedFiles[0];
+
+      setSelectedFile(file);
+      setRemoved(false);
+
+      onFileSelected?.(file);
+
+      toast.success(
+        mediaType === "video"
+          ? "Vídeo selecionado com sucesso."
+          : "Imagem selecionada com sucesso."
       );
+    },
+    [mediaType, onFileSelected, isUploading]
+  );
 
-      if (fileKey) {
-        const response = await fetch("/api/delete", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key: fileKey }),
-        });
+  function rejectedFiles(fileRejections: FileRejection[]) {
+    if (!fileRejections.length) return;
 
-        if (!response.ok) {
-          toast.error("Não foi possível remover o arquivo");
+    const tooManyFiles = fileRejections.some(
+      (rejection) =>
+        rejection.errors.some(
+          (error) => error.code === "too-many-files"
+        )
+    );
 
-          setFileState((prev) => ({
-            ...prev,
-            isDeleting: false,
-            error: true,
-          }));
+    const fileSizeTooBig = fileRejections.some(
+      (rejection) =>
+        rejection.errors.some(
+          (error) => error.code === "file-too-large"
+        )
+    );
 
-          return;
-        }
+    const invalidType = fileRejections.some(
+      (rejection) =>
+        rejection.errors.some(
+          (error) => error.code === "file-invalid-type"
+        )
+    );
 
-        await minimumAnimation;
-      } else {
-        await minimumAnimation;
-      }
+    if (fileSizeTooBig) {
+      toast.error("O tamanho do arquivo excede os limites.");
+    }
 
-      if (fileState.objectUrl && !fileState.objectUrl.startsWith("http")) {
-        URL.revokeObjectURL(fileState.objectUrl);
-      }
+    if (tooManyFiles) {
+      toast.error("Selecione apenas um arquivo.");
+    }
 
-      setFileState(() => ({
-        file: null,
-        uploading: false,
-        progress: 0,
-        objectUrl: undefined,
-        error: false,
-        fileType: "image",
-        id: null,
-        isDeleting: false,
-        isLoading: false,
-      }));
-      onFileSelected?.(null);
-
-      toast.success("Arquivo removido com sucesso");
-    } catch {
-      toast.error("Erro para remover o arquivo. Por favor tente novamente");
-
-      setFileState((prev) => ({
-        ...prev,
-        isDeleting: false,
-        error: true,
-        isLoading: false,
-      }));
+    if (invalidType) {
+      toast.error(
+        mediaType === "video"
+          ? "Selecione um vídeo válido."
+          : "Selecione uma imagem válida."
+      );
     }
   }
 
-  function handleSelectAgain() {
-    if (fileState.objectUrl) {
-      URL.revokeObjectURL(fileState.objectUrl);
-    }
+  const { getRootProps, getInputProps, isDragActive } =
+    useDropzone({
+      onDrop,
+      accept:
+        mediaType === "video"
+          ? { "video/*": [] }
+          : { "image/*": [] },
+      maxFiles: 1,
+      multiple: false,
+      disabled: isUploading,
+      maxSize:
+        mediaType === "video"
+          ? 512 * 1024 * 1024
+          : 4 * 1024 * 1024,
+      onDropRejected: rejectedFiles,
+    });
 
-    setFileState({ file: null, objectUrl: null });
+  async function handleRemoveFile() {
+    if (isUploading) return;
+
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setRemoved(true);
+
+    onFileSelected?.(null);
+
+    toast.success("Arquivo removido do formulário.");
+  }
+
+  function handleSelectAgain() {
+    if (isUploading) return;
+
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setRemoved(true);
+
     onFileSelected?.(null);
   }
 
   function renderContent() {
-    if (!fileState.file && !fileKey) {
+    if (status === "error" && selectedFile) {
       return (
-        <RenderEmptyState isDragActive={isDragActive} mediaType={mediaType} />
+        <RenderErrorState
+          onSelectAgain={handleSelectAgain}
+        />
       );
     }
 
-    if (status === "error" && fileState.file) {
-      return <RenderErrorState onSelectAgain={handleSelectAgain} />;
-    }
-
-    if (status === "uploading" && fileState.file) {
+    if (isUploading && selectedFile) {
       return (
         <div className="flex w-full flex-col items-center gap-3 text-center">
           <RenderUploadingState
             progress={progress}
-            file={fileState.file}
+            file={selectedFile}
             mediaType={mediaType}
           />
         </div>
       );
     }
 
-    return fileState.objectUrl ? (
+    const currentPreview = selectedFile
+      ? previewUrl
+      : !removed && fileKey
+        ? fileUrl
+        : null;
+
+    if (!currentPreview) {
+      return (
+        <RenderEmptyState
+          isDragActive={isDragActive}
+          mediaType={mediaType}
+        />
+      );
+    }
+
+    return (
       <RenderUploadedState
-        previewUrl={fileState.objectUrl}
+        previewUrl={currentPreview}
         fileName={
-          fileState.file?.name ??
-          (mediaType === "video" ? "Vídeo salvo" : "Imagem salva")
+          selectedFile?.name ??
+          (mediaType === "video"
+            ? "Vídeo salvo"
+            : "Imagem salva")
         }
         mediaType={mediaType}
-        isDeleting={fileState.isDeleting ?? false}
-        isLoading={fileState.isLoading ?? false}
+        isDeleting={false}
+        isLoading={false}
         handleRemoveFile={handleRemoveFile}
       />
-    ) : null;
+    );
   }
 
   return (
@@ -235,11 +217,12 @@ export function Uploader({
         "relative border-2 border-dashed transition-colors duration-200 ease-in-out w-full h-64",
         isDragActive
           ? "border-primary bg-primary/10 border-solid"
-          : "border-border hover:border-primary",
+          : "border-border hover:border-primary"
       )}
     >
       <CardContent className="flex items-center justify-center h-full w-full p-4">
         <input {...getInputProps()} />
+
         {renderContent()}
       </CardContent>
     </Card>

@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import TutorChat from "@/components/TutorChat";
@@ -7,8 +6,8 @@ import { getIndividualCourse } from "@/app/data/course/get-course";
 import { requireUser } from "@/app/data/user/require-user";
 import { prisma } from "@/lib/db";
 import { CompleteLessonButton } from "./_components/CompleteLessonButton";
-
- 
+import LessonForum from "./_components/LessonForum";
+import { getForumComments } from "@/app/data/forum/forum-actions";
 
 type PageProps = {
   params: Promise<{
@@ -23,7 +22,9 @@ type BlocoConteudo = {
   content?: BlocoConteudo[];
 };
 
-function formatarConteudoAula(descricao: string | null | undefined): string {
+function formatarConteudoAula(
+  descricao: string | null | undefined
+): string {
   if (!descricao) return "Descrição não disponível.";
 
   try {
@@ -55,9 +56,9 @@ function formatarConteudoAula(descricao: string | null | undefined): string {
   }
 }
 
-
-
-export default async function LessonPage({ params }: PageProps) {
+export default async function LessonPage({
+  params,
+}: PageProps) {
   const session = await requireUser();
 
   const { slug, lessonId } = await params;
@@ -72,7 +73,6 @@ export default async function LessonPage({ params }: PageProps) {
 
   const curso = await getStudentCourse(courseId);
 
-
   if (!curso) {
     notFound();
   }
@@ -84,40 +84,93 @@ export default async function LessonPage({ params }: PageProps) {
     }))
   );
 
-  const aulaAtual = aulas.find((aula) => aula.id === lessonId);
+  const aulaAtual = aulas.find(
+    (aula) => aula.id === lessonId
+  );
 
   if (!aulaAtual) {
     notFound();
   }
 
-  const [progresso, matricula] = await Promise.all([
-    prisma.lessonProgress.findUnique({
-      where: {
-        userId_lessonId: {
-          userId: session.user.id,
-          lessonId,
+  const [progresso, matricula, usuarioAtual, dadosCurso] =
+    await Promise.all([
+      prisma.lessonProgress.findUnique({
+        where: {
+          userId_lessonId: {
+            userId: session.user.id,
+            lessonId,
+          },
         },
-      },
-    }),
+      }),
 
-    prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: {
-          userId: session.user.id,
-          courseId,
+      prisma.enrollment.findUnique({
+        where: {
+          userId_courseId: {
+            userId: session.user.id,
+            courseId,
+          },
         },
-      },
-    }),
-  ]);
+      }),
+
+      prisma.user.findUnique({
+        where: {
+          id: session.user.id,
+        },
+        select: {
+          id: true,
+          role: true,
+          banned: true,
+        },
+      }),
+
+      prisma.course.findUnique({
+        where: {
+          id: courseId,
+        },
+        select: {
+          userId: true,
+          status: true,
+        },
+      }),
+    ]);
+
+  if (!usuarioAtual || usuarioAtual.banned || !dadosCurso) {
+    notFound();
+  }
 
   const aulaConcluida = progresso?.completed === true;
-  const matriculaAtiva = matricula?.status === "Active";
-  
-const podeConcluir =
-  (session.user.role === "user" ||
-    session.user.role === "admin") &&
-  matriculaAtiva;
 
+  const matriculaAtiva = matricula?.status === "Active";
+
+  const isSuperAdmin =
+    usuarioAtual.role === "superadmin";
+
+  const isProfessorDono =
+    usuarioAtual.role === "admin" &&
+    dadosCurso.userId === usuarioAtual.id;
+
+  const perfilValido =
+    usuarioAtual.role === "user" ||
+    usuarioAtual.role === "admin" ||
+    usuarioAtual.role === "superadmin";
+
+  const podeConcluir =
+    perfilValido && matriculaAtiva;
+
+  const podeAcessarForum =
+    perfilValido &&
+    (
+      isSuperAdmin ||
+      isProfessorDono ||
+      (
+        matriculaAtiva &&
+        dadosCurso.status === "Published"
+      )
+    );
+
+  const comentarios = podeAcessarForum
+    ? await getForumComments(lessonId)
+    : [];
 
   const videoUrl = aulaAtual.videoKey
     ? aulaAtual.videoKey.startsWith("http")
@@ -128,18 +181,23 @@ const podeConcluir =
   return (
     <main className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-6xl">
-        <Link href="/" className="text-sm text-muted-foreground">
+        <Link
+          href="/"
+          className="text-sm text-muted-foreground"
+        >
           ← Voltar ao início
         </Link>
 
-        <h1 className="mt-6 text-3xl font-bold">{curso.title}</h1>
+        <h1 className="mt-6 text-3xl font-bold">
+          {curso.title}
+        </h1>
 
         <p className="mt-2 text-muted-foreground">
           {curso.smallDescription}
         </p>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-3">
-          <section className="lg:col-span-2">
+          <section className="min-w-0 lg:col-span-2">
             <div className="flex aspect-video items-center justify-center overflow-hidden rounded-xl bg-black">
               {videoUrl ? (
                 <video
@@ -164,30 +222,49 @@ const podeConcluir =
               {aulaAtual.capitulo}
             </p>
 
-           
-<div className="mt-6 whitespace-pre-wrap">
-  {formatarConteudoAula(aulaAtual.description)}
-</div>
+            <div className="mt-6 whitespace-pre-wrap">
+              {formatarConteudoAula(
+                aulaAtual.description
+              )}
+            </div>
 
-{podeConcluir && (
-  <CompleteLessonButton
-    lessonId={lessonId}
-    completed={aulaConcluida}
-  />
-)}
+            {podeConcluir && (
+              <CompleteLessonButton
+                lessonId={lessonId}
+                completed={aulaConcluida}
+              />
+            )}
 
+            {!matriculaAtiva && (
+              <p className="mt-6 text-sm text-muted-foreground">
+                Para registrar seu progresso, você precisa
+                estar matriculado neste curso.
+              </p>
+            )}
 
-{!matriculaAtiva && (
-  <p className="mt-6 text-sm text-muted-foreground">
-    Para registrar seu progresso, você precisa
-    estar matriculado neste curso.
-  </p>
-)}
+            {/* FÓRUM DE DISCUSSÃO */}
 
+            {podeAcessarForum ? (
+              <LessonForum
+                key={lessonId}
+                lessonId={lessonId}
+                initialComments={comentarios}
+              />
+            ) : (
+              <section className="mt-10 rounded-2xl border bg-card p-6 text-center">
+                <h2 className="text-xl font-semibold">
+                  Fórum de discussão
+                </h2>
 
+                <p className="mt-2 text-sm text-muted-foreground">
+                  O fórum está disponível para estudantes
+                  matriculados e responsáveis pelo curso.
+                </p>
+              </section>
+            )}
           </section>
 
-          <aside className="rounded-xl border p-5">
+          <aside className="h-fit rounded-xl border p-5">
             <h2 className="mb-5 text-xl font-semibold">
               Conteúdo do curso
             </h2>
@@ -219,14 +296,12 @@ const podeConcluir =
         </div>
       </div>
 
-      
-<TutorChat
-  key={`${courseId}:${lessonId}`}
-  cursoId={courseId}
-  aulaId={lessonId}
-  tituloAula={aulaAtual.title}
-/>
-
+      <TutorChat
+        key={`${courseId}:${lessonId}`}
+        cursoId={courseId}
+        aulaId={lessonId}
+        tituloAula={aulaAtual.title}
+      />
     </main>
   );
 }

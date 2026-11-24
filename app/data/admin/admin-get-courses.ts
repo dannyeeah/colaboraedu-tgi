@@ -1,10 +1,19 @@
+import "server-only";
+
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "./require-admin";
 
 export async function adminGetCourses() {
-  await requireAdmin();
+  const session = await requireAdmin();
+
+  const isSuperAdmin = session.user.role === "superadmin";
 
   const data = await prisma.course.findMany({
+    where: isSuperAdmin
+      ? {}
+      : {
+          userId: session.user.id,
+        },
     orderBy: {
       createdAt: "desc",
     },
@@ -24,4 +33,6 @@ export async function adminGetCourses() {
   return data;
 }
 
-export type AdminCourseType = Awaited<ReturnType<typeof adminGetCourses>>[0];
+export type AdminCourseType = Awaited<
+  ReturnType<typeof adminGetCourses>
+>[0];

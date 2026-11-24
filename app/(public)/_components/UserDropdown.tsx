@@ -38,7 +38,9 @@ export function UserDropdown({
   const handleSignOut = useSignOut();
   const { data: session } = authClient.useSession();
 
-  const isAdmin = session?.user?.role === "admin";
+  const isAdmin =
+  session?.user?.role === "admin" ||
+  session?.user?.role === "superadmin";
 
   return (
     <DropdownMenu>

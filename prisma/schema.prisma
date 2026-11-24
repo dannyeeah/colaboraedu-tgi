@@ -28,7 +28,8 @@ model User {
   xpTransactions   XpTransaction[]
   userAchievements UserAchievement[]
   userChallenges   UserChallenge[]
-
+  forumComments ForumComment[]
+forumMentions ForumMention[]
   role       String?
   banned     Boolean?  @default(false)
   banReason  String?
@@ -96,6 +97,10 @@ model Uploader {
   fileSize  Int
   createdAt DateTime @default(now())
 
+  fileKey   String?  @unique
+  userId    String?
+
+  @@index([userId])
   @@map("uploads")
 }
 
@@ -161,6 +166,7 @@ model Lesson {
   Chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   chapterId String
   progress LessonProgress[]
+  forumComments ForumComment[]
 }
 
 
@@ -265,4 +271,40 @@ model UserChallenge {
 
   @@unique([userId, challengeId])
   @@index([challengeId])
+}
+
+model ForumComment {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String
+  lessonId  String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  parent  ForumComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies ForumComment[] @relation("CommentReplies")
+
+  mentions ForumMention[]
+
+  @@index([userId])
+  @@index([lessonId, createdAt])
+  @@index([parentId])
+}
+
+model ForumMention {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment ForumComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([userId])
 }

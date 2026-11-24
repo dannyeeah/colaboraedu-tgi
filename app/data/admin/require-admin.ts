@@ -1,6 +1,7 @@
 import "server-only";
 
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -10,12 +11,35 @@ export async function requireAdmin() {
   });
 
   if (!session) {
-    return redirect("/login");
+    redirect("/login");
   }
 
-  if (session.user.role !== "admin") {
-    return redirect("/not-admin");
+  const user = await prisma.user.findUnique({
+    where: {
+      id: session.user.id,
+    },
+    select: {
+      role: true,
+      banned: true,
+    },
+  });
+
+  if (!user || user.banned) {
+    redirect("/login");
   }
 
-  return session;
+  if (
+    user.role !== "admin" &&
+    user.role !== "superadmin"
+  ) {
+    redirect("/not-admin");
+  }
+
+  return {
+    ...session,
+    user: {
+      ...session.user,
+      role: user.role,
+    },
+  };
 }

@@ -16,11 +16,12 @@ export async function requireStudent() {
 
   // Estudantes e administradores podem acessar os cursos.
   if (
-    session.user.role !== "user" &&
-    session.user.role !== "admin"
-  ) {
-    redirect("/login");
-  }
+  session.user.role !== "user" &&
+  session.user.role !== "admin" &&
+  session.user.role !== "superadmin"
+) {
+  redirect("/login");
+}
 
   return session;
 }

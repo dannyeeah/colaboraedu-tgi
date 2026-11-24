@@ -1,30 +1,34 @@
 "use server";
 
-import { requireAdmin } from "@/app/data/admin/require-admin";
+import { requireCourseOwner } from "@/app/data/admin/require-course-owner";
 import { prisma } from "@/lib/db";
 import { ApiResponse } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 
-export async function deleteCourse(courseId: string): Promise<ApiResponse> {
-  await requireAdmin();
+export async function deleteCourse(
+  courseId: string,
+): Promise<ApiResponse> {
+  const { course } = await requireCourseOwner(courseId);
 
   try {
     await prisma.course.delete({
       where: {
-        id: courseId,
+        id: course.id,
+        userId: course.userId,
       },
     });
 
     revalidatePath("/admin/courses");
+    revalidatePath("/courses");
 
     return {
       status: "success",
-      message: "Course deleted successfully",
+      message: "Curso excluído com sucesso.",
     };
   } catch {
     return {
       status: "error",
-      message: "Failed to delete Course!",
+      message: "Falha ao excluir o curso.",
     };
   }
 }

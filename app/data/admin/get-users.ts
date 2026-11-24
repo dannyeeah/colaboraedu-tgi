@@ -2,10 +2,10 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
-import { requireAdmin } from "./require-admin";
+import { requireSuperAdmin } from "./require-superadmin";
 
 export async function getUsers() {
-  await requireAdmin();
+  await requireSuperAdmin();
 
   const users = await prisma.user.findMany({
     select: {
